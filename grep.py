@@ -74,6 +74,9 @@ class EntryInfo():
       return 0
 
 
+########################################################################################################################
+## EntryList
+########################################################################################################################
 class EntryList:
 
   def __init__(self, path, reInclude, reExclude):
@@ -198,18 +201,16 @@ class Grep():
       Grep.write(i, data)
 
   def scan(self, entryInfo):
-    line = 0
-    replaceFlag = False
     with open(entryInfo.path, "r", encoding="utf-8", newline="") as file:
       data = file.readlines()
-    self.printCaption(entryInfo.name)
 
+    replaceFlag = False
+    self.printCaption(entryInfo.name)
     for line, text in enumerate(data):
       if line != len(data) - 1:  # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
         text, linebreak = Grep.removeLineBreak(text)
       else:
         linebreak = ""
-
       matchList = search(self.reSearch, text, self.showZeroLength)
       if ((len(matchList) > 0 and not self.invertMatch) or (len(matchList) <= 0 and self.invertMatch)):
         self.printMessage(entryInfo.name, line, text, matchList)
