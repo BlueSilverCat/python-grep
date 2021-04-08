@@ -168,8 +168,8 @@ class Grep():
       self.flags += re.ASCII
     if args.ignoreCase:
       self.flags += re.IGNORECASE
-    # if args.multiLine:
-    #   self.flags += re.MULTILINE
+    if args.multiLine:
+      self.flags += re.MULTILINE
     if args.dotAll:
       self.flags += re.DOTALL
 
@@ -343,7 +343,7 @@ def getLastIndex(match, lastIndex=0):
 # re.DEBUG: 無効
 # re.IGNORECASE
 # re.MULTILINE: 無効
-# re.DOTALL: 行ごとの処理になっているのであまり有効でない
+# re.DOTALL: 無効
 # re.VERBOSE: 無効
 
 
@@ -364,8 +364,8 @@ def argumentParser():
   )
   parser.add_argument("-I", "--ignoreCase", action="store_true", help="perform case-insensitive matching.")
   # parser.add_argument("-m", "--multiLine", action="store_true", help="when specified, the pattern character '^' matches at the beginning of the string and at the beginning of each line (immediately following each newline).")
-  parser.add_argument("-D", "--dotAll", action="store_true",
-                      help="make the '.' special character match any character at all, including a newline.")
+  # parser.add_argument("-D", "--dotAll", action="store_true",
+  #                     help="make the '.' special character match any character at all, including a newline.")
 
   # tree view
   parser.add_argument("-t", "--tree", action="store_true", help="show directory tree.")
