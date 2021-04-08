@@ -124,20 +124,20 @@ class EntryList:
         parentList.append(self.entries[i].path)
       parent = os.path.dirname(self.entries[i].path)
       if self.entries[i].isFile() and parent not in parentList and parent != os.path.dirname(self.entries[i - 1].path):
-        print(getParentName(parent, self.entries[i].depth - 1, parentList))
+        print(EntryList.getParentName(parent, self.entries[i].depth - 1, parentList))
       print(self.entries[i].getIndentedString())
 
-
-def getParentName(path, depth, parentList):
-  output = ""
-  while path not in parentList and depth >= 0:
-    name = os.path.basename(path)
-    attribute = EntryInfo.getAttribute(path)
-    output = f"{'  ' * depth}{attribute}:{name}\n" + output
-    parentList.append(path)
-    depth -= 1
-    path = os.path.dirname(path)
-  return output.rstrip()
+  @staticmethod
+  def getParentName(path, depth, parentList):
+    output = ""
+    while path not in parentList and depth >= 0:
+      name = os.path.basename(path)
+      attribute = EntryInfo.getAttribute(path)
+      output = f"{'  ' * depth}{attribute}:{name}\n" + output
+      parentList.append(path)
+      depth -= 1
+      path = os.path.dirname(path)
+    return output.rstrip()
 
 
 ########################################################################################################################
@@ -168,10 +168,10 @@ class Grep():
       self.flags += re.ASCII
     if args.ignoreCase:
       self.flags += re.IGNORECASE
-    if args.multiLine:
-      self.flags += re.MULTILINE
-    if args.dotAll:
-      self.flags += re.DOTALL
+    # if args.multiLine:
+    #   self.flags += re.MULTILINE
+    # if args.dotAll:
+    #   self.flags += re.DOTALL
 
   def compile(self):
     self.reInclude = None
