@@ -29,19 +29,24 @@ class EntryInfo():
     else:
       return EntryInfo.getAttributePriority(self.attribute) > EntryInfo.getAttributePriority(other.attribute)
 
-  def getOutputString(self):
+  def getIndentedString(self):
     return f"{'  ' * self.depth}{str(self)}"
 
-  def setAttribute(self):
-    self.attribute = ""
-    if os.path.isdir(self.path):  # True: file or dirLink
-      self.attribute = "d"
-    elif os.path.isfile(self.path):  # True: file or fileLink
-      self.attribute = "f"
-    if os.path.islink(self.path):
-      self.attribute += "l"
+  @staticmethod
+  def getAttribute(path):
+    attribute = ""
+    if os.path.isdir(path):  # True: file or dirLink
+      attribute = "d"
+    elif os.path.isfile(path):  # True: file or fileLink
+      attribute = "f"
+    if os.path.islink(path):
+      attribute += "l"
     else:
-      self.attribute += " "
+      attribute += " "
+    return attribute
+
+  def setAttribute(self):
+    self.attribute = EntryInfo.getAttribute(self.path)
 
   def isDir(self):
     return True if "d" in self.attribute else False
@@ -68,6 +73,27 @@ class EntryInfo():
     else:
       return 0
 
+
+class EntryList:
+
+  def __init__(self, path, reInclude, reExclude):
+    self.entries = []
+    self.getAllEntries(path, reInclude, reExclude)
+
+  def getAllEntries(self, path, reInclude, reExclude):
+    self.entries = [EntryInfo(path)]
+    if self.entries[0].isFile():
+      return
+
+    workStack = []
+    EntryList.getSubEntries(path, workStack, 1)
+    while len(workStack) > 0:
+      entry = workStack.pop()
+      self.entries.append(entry)
+      if entry.isDir():
+        EntryList.getSubEntries(entry.path, workStack, entry.depth + 1)
+    self.entries = EntryList.filterEntries(self.entries, reInclude, reExclude)
+
   @staticmethod
   def getSubEntries(path, stack, depth=0):
     lt = os.listdir(path)  # オブジェクトの型の問題で os.scandir(path) は使わないことにした
@@ -88,10 +114,21 @@ class EntryInfo():
       result.append(entry)
     return result
 
-  @staticmethod
-  def printTree(entries):
-    for entry in entries:
-      print(entry.getOutputString())
+  def printTree(self):
+    parentList = []
+    for i in range(len(self.entries)):
+      if self.entries[i].isDir():
+        parentList.append(self.entries[i].path)
+      parent = os.path.dirname(self.entries[i].path)
+      if self.entries[i].isFile() and parent not in parentList and parent != os.path.dirname(self.entries[i - 1].path):
+        print(getParentName(parent, self.entries[i].depth - 1))
+        parentList.append(parent)
+      print(self.entries[i].getIndentedString())
+
+def getParentName(path, depth):
+  attribute = EntryInfo.getAttribute(path)
+  name = os.path.basename(path)
+  return f"{'  ' * depth}{attribute}:{name}"
 
 
 ########################################################################################################################
@@ -102,11 +139,11 @@ class EntryInfo():
 class Grep():
 
   def __init__(self, args):
-    self.linebreak = ""
     self.setSearchOption(args)
     self.setPrintOption(args)
     self.setFlag(args)
     self.compile()
+    self.entryList = EntryList(self.path, self.reInclude, self.reExclude)
 
   def setSearchOption(self, args):
     self.path = args.path
@@ -146,20 +183,7 @@ class Grep():
     self.offsetLength = args.offsetLength
     self.showZeroLength = args.showZeroLength
 
-  def getAllEntries(self):
-    self.entryList = [EntryInfo(self.path)]
-    if self.entryList[0].isFile():
-      return
-
-    workStack = []
-    EntryInfo.getSubEntries(self.path, workStack, 1)
-    while len(workStack) > 0:
-      entry = workStack.pop()
-      self.entryList.append(entry)
-      if entry.isDir():
-        EntryInfo.getSubEntries(entry.path, workStack, entry.depth + 1)
-
-  def scanLines(self, entryInfo):
+  def scan(self, entryInfo):
     line = 0
     replaceFlag = False
     with open(entryInfo.path, "r", encoding="utf-8", newline="") as file:
@@ -173,10 +197,8 @@ class Grep():
         matchList = search(self.reSearch, text, self.showZeroLength)
         if ((len(matchList) > 0 and not self.invertMatch) or (len(matchList) <= 0 and self.invertMatch)):
           self.printMessage(entryInfo.name, line, text, matchList)
+        replaceFlag = True if self.replace(data, line, text) else replaceFlag
 
-        flag = self.replace(data, line, text)
-        if flag:
-          replaceFlag = flag
         if line != len(data) -1:
           data[line] += linebreak
     return data if replaceFlag else []
@@ -193,14 +215,12 @@ class Grep():
       return True
     return False
 
-  ########################################################################################################################
   ## print
-  ########################################################################################################################
 
   def printTree(self):
     if not self.printTree:
       return
-    EntryInfo.printTree(self.entryList)
+    self.entryList.printTree()
 
   def printCaption(self, name):
     if not self.noCaption:
@@ -222,7 +242,7 @@ class Grep():
     print(string)
 
   @staticmethod
-  def writeLines(entryInfo, data):
+  def write(entryInfo, data):
     if len(data) == 0:
       return
     with open(entryInfo.path, "w", encoding="utf-8", newline="") as file:  # 改行コード
@@ -233,6 +253,7 @@ class Grep():
     linebreak = checkTailLineBreak(string)
     string = removeLineBreak(string, linebreak)
     return (string, linebreak)
+
 
 ########################################################################################################################
 ## utility
@@ -264,31 +285,38 @@ def checkTailLineBreak(string):
 ########################################################################################################################
 
 
-def search(regex, text, includeZero=False):
+def search(regex, text, includeZero=True):
   match = regex.search(text)
   if match is None:
     return []
 
-  lt = [getMatchInfo(match)]
-  lastIndex = getLastIndex(match)
+  lt = []
+  lastIndex = storeMatchInfo(lt, match, 0, includeZero)
   while len(text[lastIndex:]) > 0:
     match = regex.search(text[lastIndex:])
     if match is None:
       return lt
-    lt.append(getMatchInfo(match, lastIndex))
-    lastIndex = getLastIndex(match, lastIndex)
+    lastIndex = storeMatchInfo(lt, match, lastIndex, includeZero)
   return lt
 
+def storeMatchInfo(lt, match, lastIndex=0, includeZero=True):
+  if includeZero or len(match[0]) > 0:
+    lt.append(getMatchInfo(match, lastIndex))
+  return getLastIndex(match, lastIndex)
+
+
 def getMatchInfo(match, lastIndex=0):
-    start = match.start() + lastIndex
-    end = match.end() + lastIndex
-    length = len(match[0])
-    return {"start": start, "end": end, "length": length, "string": match[0]}
+  start = match.start() + lastIndex
+  end = match.end() + lastIndex
+  length = len(match[0])
+  return {"start": start, "end": end, "length": length, "string": match[0]}
+
 
 def getLastIndex(match, lastIndex=0):
   end = match.end() + lastIndex
   length = len(match[0])
-  return end if length > 0 else end  + 1
+  return end if length > 0 else end + 1
+
 
 ########################################################################################################################
 ## argument
@@ -349,12 +377,10 @@ if __name__ == "__main__":
     print(args)
 
   grep = Grep(args)
-  grep.getAllEntries()
   grep.printTree()
-  grep.entryList = EntryInfo.filterEntries(grep.entryList, grep.reInclude, grep.reExclude)
 
-  for i in grep.entryList:
+  for i in grep.entryList.entries:
     if not i.isFile():
       continue
-    data = grep.scanLines(i)
-    Grep.writeLines(i, data)
+    data = grep.scan(i)
+    Grep.write(i, data)
