@@ -202,27 +202,26 @@ class Grep():
     replaceFlag = False
     with open(entryInfo.path, "r", encoding="utf-8", newline="") as file:
       data = file.readlines()
-      self.printCaption(entryInfo.name)
+    self.printCaption(entryInfo.name)
 
-      for line, text in enumerate(data):
-        if line != len(data) - 1:  # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
-          text, linebreak = Grep.removeLineBreak(text)
+    for line, text in enumerate(data):
+      if line != len(data) - 1:  # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
+        text, linebreak = Grep.removeLineBreak(text)
+      else:
+        linebreak = ""
 
-        matchList = search(self.reSearch, text, self.showZeroLength)
-        if ((len(matchList) > 0 and not self.invertMatch) or (len(matchList) <= 0 and self.invertMatch)):
-          self.printMessage(entryInfo.name, line, text, matchList)
-        replaceFlag = True if self.replace(data, line, text) else replaceFlag
-
-        if line != len(data) - 1:
-          data[line] += linebreak
+      matchList = search(self.reSearch, text, self.showZeroLength)
+      if ((len(matchList) > 0 and not self.invertMatch) or (len(matchList) <= 0 and self.invertMatch)):
+        self.printMessage(entryInfo.name, line, text, matchList)
+      replaceFlag = True if self.replace(data, line, text, linebreak) else replaceFlag
     return data if replaceFlag else []
 
-  def replace(self, data, line, text):
+  def replace(self, data, line, text, linebreak):
     if self.repl is None:
       return False
 
     if not self.invertMatch and self.reSearch.search(text) is not None:
-      data[line] = self.reSearch.sub(self.repl, text)
+      data[line] = self.reSearch.sub(self.repl, text) + linebreak
       return True
     elif self.invertMatch and self.reSearch.search(text) is None:
       data[line] = self.repl
@@ -307,7 +306,7 @@ def search(regex, text, includeZero=True):
 
   lt = []
   lastIndex = storeMatchInfo(lt, match, 0, includeZero)
-  while len(text[lastIndex:]) > 0:
+  while len(text) >= lastIndex:
     match = regex.search(text[lastIndex:])
     if match is None:
       return lt
