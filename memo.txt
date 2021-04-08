@@ -1,0 +1,42 @@
+```
+re.sub("\d*", "X", "abc123def456")
+'XaXbXcXXdXeXfXX'
+```
+
+---
+
+>>> re.sub(".*", "X", "abc\n123\n")
+'XX\nXX\nX'
+
+>>> re.sub(".*", "X", "abc\r\n123\r\n")
+'XX\nXX\nX'
+
+>>> re.sub(".*", "X", "abc\n")
+'XX\nX'
+re.sub(".*", "X", "123\n")
+'XX\nX'
+
+>>> re.sub(".*", "X", "abc")
+'XX'
+>>> re.sub(".*", "X", "123")
+'XX'
+
+---
+
+# vscode
+
+```
+abc
+123
+
+```
+
+```
+X
+X
+X
+```
+
+---
+
+"abc".replace(/.*/, "X")
