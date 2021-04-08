@@ -122,7 +122,6 @@ class EntryList:
       parent = os.path.dirname(self.entries[i].path)
       if self.entries[i].isFile() and parent not in parentList and parent != os.path.dirname(self.entries[i - 1].path):
         print(getParentName(parent, self.entries[i].depth - 1, parentList))
-        parentList.append(parent)
       print(self.entries[i].getIndentedString())
 
 
