@@ -63,13 +63,13 @@ class EntryInfo():
   @staticmethod
   def getAttributePriority(attribute):
     if attribute == "f ":
-      return 3
-    elif attribute == "fl":
-      return 4
-    elif attribute == "d ":
       return 1
-    elif attribute == "dl":
+    elif attribute == "fl":
       return 2
+    elif attribute == "d ":
+      return 3
+    elif attribute == "dl":
+      return 4
     else:
       return 0
 
@@ -121,14 +121,21 @@ class EntryList:
         parentList.append(self.entries[i].path)
       parent = os.path.dirname(self.entries[i].path)
       if self.entries[i].isFile() and parent not in parentList and parent != os.path.dirname(self.entries[i - 1].path):
-        print(getParentName(parent, self.entries[i].depth - 1))
+        print(getParentName(parent, self.entries[i].depth - 1, parentList))
         parentList.append(parent)
       print(self.entries[i].getIndentedString())
 
-def getParentName(path, depth):
-  attribute = EntryInfo.getAttribute(path)
-  name = os.path.basename(path)
-  return f"{'  ' * depth}{attribute}:{name}"
+
+def getParentName(path, depth, parentList):
+  output = ""
+  while path not in parentList and depth >= 0:
+    name = os.path.basename(path)
+    attribute = EntryInfo.getAttribute(path)
+    output = f"{'  ' * depth}{attribute}:{name}\n" + output
+    parentList.append(path)
+    depth -= 1
+    path = os.path.dirname(path)
+  return output.rstrip()
 
 
 ########################################################################################################################
@@ -183,6 +190,14 @@ class Grep():
     self.offsetLength = args.offsetLength
     self.showZeroLength = args.showZeroLength
 
+  def main(self):
+    self.printTree()
+    for i in self.entryList.entries:
+      if not i.isFile():
+        continue
+      data = grep.scan(i)
+      Grep.write(i, data)
+
   def scan(self, entryInfo):
     line = 0
     replaceFlag = False
@@ -191,7 +206,7 @@ class Grep():
       self.printCaption(entryInfo.name)
 
       for line, text in enumerate(data):
-        if line != len(data) -1: # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
+        if line != len(data) - 1:  # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
           text, linebreak = Grep.removeLineBreak(text)
 
         matchList = search(self.reSearch, text, self.showZeroLength)
@@ -199,7 +214,7 @@ class Grep():
           self.printMessage(entryInfo.name, line, text, matchList)
         replaceFlag = True if self.replace(data, line, text) else replaceFlag
 
-        if line != len(data) -1:
+        if line != len(data) - 1:
           data[line] += linebreak
     return data if replaceFlag else []
 
@@ -299,6 +314,7 @@ def search(regex, text, includeZero=True):
     lastIndex = storeMatchInfo(lt, match, lastIndex, includeZero)
   return lt
 
+
 def storeMatchInfo(lt, match, lastIndex=0, includeZero=True):
   if includeZero or len(match[0]) > 0:
     lt.append(getMatchInfo(match, lastIndex))
@@ -377,10 +393,4 @@ if __name__ == "__main__":
     print(args)
 
   grep = Grep(args)
-  grep.printTree()
-
-  for i in grep.entryList.entries:
-    if not i.isFile():
-      continue
-    data = grep.scan(i)
-    Grep.write(i, data)
+  grep.main()
