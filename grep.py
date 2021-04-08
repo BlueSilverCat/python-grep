@@ -248,7 +248,8 @@ class Grep():
       string += f"[{line:0{self.lineNumberLength}}]"
     if not self.noOffset:
       for match in matchList:
-        string += f"({match['start']:0{self.offsetLength}}--{match['end']:0{self.offsetLength}}:{match['length']})"
+        # string += f"({match['start']:0{self.offsetLength}}--{match['end']:0{self.offsetLength}}:{match['length']})"
+        string += f"({match['start']:0{self.offsetLength}}:{match['length']:0{self.offsetLength}})"
     if not self.noFileName or not self.noLineNumber or not self.noOffset:
       string += f":"
     text, _ = Grep.removeLineBreak(text)
