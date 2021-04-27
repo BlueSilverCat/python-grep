@@ -1,3 +1,17 @@
+# memo
+
+`↲ = U+21B2`
+`↵ = U+21B5`
+`⏎ = U+23CE`
+`⤶ = U+2936`
+`⮠ = U+2BA0`
+`⮨ = U+2BA8`
+`⮰ = U+2BB0`
+
+---
+
+## python
+
 ```
 re.sub("\d*", "X", "abc123def456")
 'XaXbXcXXdXeXfXX'
@@ -25,7 +39,7 @@ re.sub("\d*", "X", "abc123def456")
 
 ---
 
-# vscode
+## vscode
 
 ```
 abc

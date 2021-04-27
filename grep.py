@@ -183,6 +183,7 @@ class Grep():
     self.reSearch = re.compile(self.search, flags=self.flags)
 
   def setPrintOption(self, args):
+    self.tree = args.tree
     self.noCaption = args.noCaption
     self.noLineNumber = args.noLineNumber
     self.lineNumberLength = args.lineNumberLength
@@ -201,11 +202,11 @@ class Grep():
       Grep.write(i, data)
 
   def scan(self, entryInfo):
+    self.printCaption(entryInfo.name)
     with open(entryInfo.path, "r", encoding="utf-8", newline="") as file:
       data = file.readlines()
 
     replaceFlag = False
-    self.printCaption(entryInfo.name)
     for line, text in enumerate(data):
       if line != len(data) - 1:  # 改行を削除しないと処理がVScodeなどで置換した場合と異なってしまう。最終行は改行を消してしまうと処理がおかしくなる
         text, linebreak = Grep.removeLineBreak(text)
@@ -218,21 +219,31 @@ class Grep():
     return data if replaceFlag else []
 
   def replace(self, data, line, text, linebreak):
-    if self.repl is None:
-      return False
-
-    if not self.invertMatch and self.reSearch.search(text) is not None:
-      data[line] = self.reSearch.sub(self.repl, text) + linebreak
-      return True
-    elif self.invertMatch and self.reSearch.search(text) is None:
-      data[line] = self.repl
-      return True
+    match = self.reSearch.search(text)
+    if match is not None:
+      if int(match.group(1)) > int(match.group(2)):
+        result = self.reSearch.sub('min="\\2" max="\\1"', text) + linebreak
+        print(f"####{result}")
+        data[line] = result
+        return True
     return False
+
+  # def replace(self, data, line, text, linebreak):
+  #   if self.repl is None:
+  #     return False
+
+  #   if not self.invertMatch and self.reSearch.search(text) is not None:
+  #     data[line] = self.reSearch.sub(self.repl, text) + linebreak
+  #     return True
+  #   elif self.invertMatch and self.reSearch.search(text) is None:
+  #     data[line] = self.repl
+  #     return True
+  #   return False
 
   ## print
 
   def printTree(self):
-    if not self.printTree:
+    if not self.tree:
       return
     self.entryList.printTree()
 
