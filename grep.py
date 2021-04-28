@@ -209,7 +209,7 @@ class MatchInfo:
 
 
 ########################################################################################################################
-## grep
+## Regex
 ########################################################################################################################
 
 
@@ -311,6 +311,11 @@ class Regex:
     if invertMatch:
       self.setInvert(data)
     self.setLineInfo(data, linebreak)
+
+
+########################################################################################################################
+## Grep
+########################################################################################################################
 
 
 class Grep:
@@ -439,7 +444,6 @@ class Grep:
     string = ""
     offsetString = ""
     for info in self.regex.matchLineInfo:
-      # print(info)
       if info.line != previousLine:
         print(string)
         offsetString = ""
@@ -530,8 +534,12 @@ def argumentParser():
   # search option
   parser.add_argument("path", help="specify file or directory.")
   parser.add_argument("pattern", help="specify search string as regular expression.")
-  parser.add_argument("-r", "--replace", nargs="?", const="", help="specify replace string. replace matching strings with this string.")  # 空文字列を受け取れる設定
-  parser.add_argument("-rt", "--replaceTest", action="store_true",  help="Show only the result of replacement.")
+  parser.add_argument("-r",
+                      "--replace",
+                      nargs="?",
+                      const="",
+                      help="specify replace string. replace matching strings with this string.")  # 空文字列を受け取れる設定
+  parser.add_argument("-rt", "--replaceTest", action="store_true", help="Show only the result of replacement.")
   parser.add_argument("-v", "--invertMatch", action="store_true", help="select non-matching lines.")
   parser.add_argument("-i", "--include", help="search only path that match pattern.")
   parser.add_argument("-e", "--exclude", help="skip path match pattern.")
