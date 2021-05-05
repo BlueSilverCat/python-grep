@@ -19,7 +19,7 @@ class EntryInfo():
     self.depth = depth
     self.setAttribute()
 
-  def __str__(self):
+  def __repr__(self):
     # return f"{'  ' * self.depth}{self.attribute}: {self.name}"
     return f"{self.attribute}: {self.name}"
 
@@ -279,7 +279,6 @@ class Regex:
     lineOffset = string.count(linebreak, 0, matchInfo.start)
     columnOffset = matchInfo.start - string[:matchInfo.start].rfind(linebreak) - 1
     for i in range(len(matchLines)):
-      lineNumber = lineOffset + i
       lineInfo.append(
           MatchLineInfo(line=lineOffset + i,
                         start=columnOffset,
@@ -369,14 +368,13 @@ class Grep:
       self.reExclude = re.compile(self.exclude, flags=self.flags)
 
   def __repr__(self):
-    return f"{self.pattern}, {self.flags}, {len(self.matchInfo)}"
+    return f"{self.pattern}, {self.flags}, {len(self.regex.matchLineInfo)}"
 
   def perform(self):
     self.printTree()
     for entryInfo in self.entryList.entries:
       if not entryInfo.isFile():
         continue
-      self.printCaption(entryInfo.name)
       with open(entryInfo.path, "r", encoding="utf-8", newline="") as file:
         data = file.read()
       linebreak = getLineBreak(data)
@@ -439,12 +437,15 @@ class Grep:
     return f":" if not self.noFileName or not self.noLineNumber or not self.noOffset else ""
 
   def printMessage(self, name, text, linebreak="\n", replacer=""):  # replacer="↲"
+    if len(self.regex.matchLineInfo) <= 0:
+      return
+    self.printCaption(name)
     lineText = split(text, linebreak, replacer)
-    previousLine = 0
+    previousLine = -1
     string = ""
     offsetString = ""
     for info in self.regex.matchLineInfo:
-      if info.line != previousLine:
+      if info.line != previousLine and previousLine > -1:
         print(string)
         offsetString = ""
         string = ""
@@ -459,6 +460,9 @@ class Grep:
     print(string)
 
   def printMessageOnly(self, name, linebreak="\n", replacer=""):  # replacer="↲"
+    if len(self.regex.matchLineInfo) <= 0:
+      return
+    self.printCaption(name)
     string = ""
     for info in self.regex.matchLineInfo:
       string = self.getFileName(name)
