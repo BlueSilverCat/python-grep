@@ -1,0 +1,14 @@
+abc123def456
+ABC123DEF456
+
+123abc456def
+123ABC456DEF
+
+Abc123Def456
+123Abc456Def
+
+１２３
+abc１２３
+ABC１２３
+ＡＢＣ１２３
+一二三
